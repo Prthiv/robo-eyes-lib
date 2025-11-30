@@ -36,7 +36,7 @@ unsigned long lastDebounceTime = 0;
 
 // --- Emotion Cycling ---
 int currentEmotionIndex = 0;
-const int NUM_EMOTIONS = 5; // Updated: 5 emotions (DRIVING removed)
+const int NUM_EMOTIONS = 8; // Updated: 8 emotions (added happy)
 
 void setup() {
   Serial.begin(115200);
@@ -104,6 +104,18 @@ void triggerNextEmotion() {
     case 4:
       Serial.println(F("Scared"));
       eyes.scared();
+      break;
+    case 5:
+      Serial.println(F("Pat"));
+      eyes.pat();
+      break;
+    case 6:
+      Serial.println(F("Serious"));
+      eyes.serious();
+      break;
+    case 7:
+      Serial.println(F("Happy"));
+      eyes.happy();
       break;
   }
   currentEmotionIndex = (currentEmotionIndex + 1) % NUM_EMOTIONS;

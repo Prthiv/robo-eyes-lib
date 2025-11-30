@@ -14,6 +14,7 @@ RideBuddyEyes::RideBuddyEyes() {
   _previousEmotion = NEUTRAL;
   _animDuration = 0;
   _isIdleActionActive = false;
+  _patMoveDirection = false;
   _vibrateXOffset = 0;
   _vibrateYOffset = 0;
 }
@@ -58,7 +59,21 @@ void RideBuddyEyes::update() {
     setEmotion(_previousEmotion);
   }
 
+  if (_currentEmotion == PAT && currentTime > _patEndTime) {
+    setEmotion(_previousEmotion);
+    // On exiting PAT, smoothly return eyes to center.
+    EyeState neutralState = {0, 0, EYE_WIDTH, EYE_HEIGHT};
+    startAnimation(neutralState, PAT_MOVE_MIN_INTERVAL);
+  }
+
   // --- Handle Per-Emotion Behaviors ---
+  if (_currentEmotion == PAT && currentTime >= _nextPatMoveTime) {
+    _patMoveDirection = !_patMoveDirection; // Toggle direction
+    EyeState patTarget = {(_patMoveDirection ? (float)PAT_MOVE_MAGNITUDE : (float)-PAT_MOVE_MAGNITUDE), 0, EYE_WIDTH, EYE_HEIGHT};
+    startAnimation(patTarget, PAT_MOVE_MIN_INTERVAL - 50);
+    _nextPatMoveTime = currentTime + random(PAT_MOVE_MIN_INTERVAL, PAT_MOVE_MAX_INTERVAL);
+  }
+  
   if (_currentEmotion == SCARED && currentTime >= _nextScaredMoveTime) {
     EyeState scaredTarget = {(float)random(-5, 6), (float)random(-3, 4), SCARED_EYE_WIDTH, SCARED_EYE_HEIGHT};
     startAnimation(scaredTarget, SCARED_MOVE_MIN_INTERVAL - 50);
@@ -124,6 +139,10 @@ void RideBuddyEyes::setEmotion(Emotion emotion) {
     _nextScaredMoveTime = millis() + 100;
   } else if (emotion == NEUTRAL) {
     _nextIdleActionTime = millis() + random(IDLE_ACTION_MIN_INTERVAL, IDLE_ACTION_MAX_INTERVAL);
+  } else if (emotion == PAT) {
+    if (_currentEmotion == PAT) return; // Don't restart if already patting
+    _patEndTime = millis() + 2000; // Show >< for 2 seconds
+    _nextPatMoveTime = millis();
   }
 }
 
@@ -133,6 +152,9 @@ void RideBuddyEyes::sad()       { setEmotion(SAD); }
 void RideBuddyEyes::angry()     { setEmotion(ANGRY); }
 void RideBuddyEyes::love()      { setEmotion(LOVE); }
 void RideBuddyEyes::scared()    { setEmotion(SCARED); }
+void RideBuddyEyes::pat()       { setEmotion(PAT); }
+void RideBuddyEyes::serious()   { setEmotion(SERIOUS); }
+void RideBuddyEyes::happy()     { setEmotion(HAPPY); }
 void RideBuddyEyes::blink()     { setEmotion(BLINK); }
 
 void RideBuddyEyes::startAnimation(const EyeState& target, uint16_t duration) {
@@ -223,8 +245,51 @@ void RideBuddyEyes::drawOneEye(uint8_t i, Emotion emotion) {
       break;
     }
 
+    case PAT: {
+      int16_t w = 24;
+      int16_t h = 24;
+      if (i == 0) { // Left eye >
+          _display->drawLine(x - w/2, y - h/2, x + w/2, y, SH110X_WHITE);
+          _display->drawLine(x - w/2, y + h/2, x + w/2, y, SH110X_WHITE);
+          _display->drawLine(x - w/2, y - h/2 + 1, x + w/2, y, SH110X_WHITE);
+          _display->drawLine(x - w/2, y + h/2 - 1, x + w/2, y, SH110X_WHITE);
+          _display->drawLine(x - w/2, y - h/2 + 2, x + w/2, y, SH110X_WHITE); // Even thicker
+          _display->drawLine(x - w/2, y + h/2 - 2, x + w/2, y, SH110X_WHITE); // Even thicker
+      } else { // Right eye <
+          _display->drawLine(x + w/2, y - h/2, x - w/2, y, SH110X_WHITE);
+          _display->drawLine(x + w/2, y + h/2, x - w/2, y, SH110X_WHITE);
+          _display->drawLine(x + w/2, y - h/2 + 1, x - w/2, y, SH110X_WHITE);
+          _display->drawLine(x + w/2, y + h/2 - 1, x - w/2, y, SH110X_WHITE);
+          _display->drawLine(x + w/2, y - h/2 + 2, x - w/2, y, SH110X_WHITE); // Even thicker
+          _display->drawLine(x + w/2, y + h/2 - 2, x - w/2, y, SH110X_WHITE); // Even thicker
+      }
+      break;
+    }
+
     case SCARED:
       _display->fillRoundRect(x - w/2, y - h/2, w, h, h/2, SH110X_WHITE);
       break;
+
+    case SERIOUS:
+      // Draw the bottom half of a round rect to make a 'u' shape
+      _display->fillRoundRect(x - w/2, y - h/2, w, h, EYE_CORNER_RADIUS, SH110X_WHITE);
+      _display->fillRect(x - w/2, y - h/2, w, h/2 + 2, SH110X_BLACK);
+      break;
+
+    case HAPPY: {
+      int16_t w = EYE_WIDTH / 2; // Smaller
+      int16_t h = EYE_HEIGHT / 2; // Smaller
+      // Draw the ^ shape
+      _display->drawLine(x - w/2, y + h/2, x, y - h/2, SH110X_WHITE);
+      _display->drawLine(x + w/2, y + h/2, x, y - h/2, SH110X_WHITE);
+      // Make it thicker
+      _display->drawLine(x - w/2 + 1, y + h/2, x + 1, y - h/2, SH110X_WHITE);
+      _display->drawLine(x + w/2 - 1, y + h/2, x - 1, y - h/2, SH110X_WHITE);
+      _display->drawLine(x - w/2 + 2, y + h/2, x + 2, y - h/2, SH110X_WHITE);
+      _display->drawLine(x + w/2 - 2, y + h/2, x - 2, y - h/2, SH110X_WHITE);
+      _display->drawLine(x - w/2 + 3, y + h/2, x + 3, y - h/2, SH110X_WHITE);
+      _display->drawLine(x + w/2 - 3, y + h/2, x - 3, y - h/2, SH110X_WHITE);
+      break;
+    }
   }
 }

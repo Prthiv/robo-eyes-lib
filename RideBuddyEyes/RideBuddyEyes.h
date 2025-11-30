@@ -49,6 +49,10 @@
 #define STEERING_SPEED 0.0015
 #define STEERING_MAGNITUDE 2
 
+#define PAT_MOVE_MIN_INTERVAL 150
+#define PAT_MOVE_MAX_INTERVAL 300
+#define PAT_MOVE_MAGNITUDE 10
+
 // --- Emotion Enum
 enum Emotion {
   NEUTRAL,
@@ -56,7 +60,10 @@ enum Emotion {
   ANGRY,
   LOVE,
   SCARED,
-  BLINK
+  BLINK,
+  PAT,
+  SERIOUS,
+  HAPPY
 };
 
 // --- Data Structures ---
@@ -80,6 +87,9 @@ class RideBuddyEyes {
     void angry();
     void love();
     void scared();
+    void pat();
+    void serious();
+    void happy();
   // driving() removed — DRIVING emotion removed
     void blink();
 
@@ -95,10 +105,13 @@ class RideBuddyEyes {
     // --- State Variables ---
     unsigned long _nextBlinkTime;
     unsigned long _blinkStartTime;
+    unsigned long _patEndTime;
     unsigned long _nextScaredMoveTime;
     unsigned long _nextIdleActionTime;
     unsigned long _idleActionEndTime;
     bool _isIdleActionActive;
+    bool _patMoveDirection;
+    unsigned long _nextPatMoveTime;
     int8_t _vibrateXOffset;
     int8_t _vibrateYOffset;
     unsigned long _nextVibrateTime;
